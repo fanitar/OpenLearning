@@ -1,0 +1,77 @@
+---
+title: "Open University Learning Analytics Dataset"
+author: "Fanita Rodrigues"
+date: "4/24/2018"
+output: 
+ md_document:
+    variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+ Open University Learning Analytics Dataset (OULAD) contains data about 
+    courses, students and their interactions with Virtual Learning 
+    Environment (VLE) for seven selected courses (called modules). Presentations
+    of courses start in February and October - they are marked by "B" and "J" 
+    respectively. The dataset consists of tables connected using unique 
+    identifiers. Dataset is stored in several csv files. We start off the analysis by declaring various packages that we will use.
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(data.table)
+library(lubridate)
+```
+
+## Exploratory Data Analysis
+
+We can now start reading in the csv files and explore the data within. The `tidyverse` package is ideally suited for all data wrangling operations. Since one of the csv files (`studentVle.csv`) is 432 MB in size, we will utilize the `fread()` function from the `data.table` package to speed up data ingestion.
+
+```{r, warning=FALSE, message=FALSE}
+assess <- read_csv("assessments.csv")
+courses <- read_csv("courses.csv")
+stuAssess <- read_csv("studentAssessment.csv")
+stuInfo <- read_csv("studentInfo.csv")
+stuReg <- read_csv("studentRegistration.csv")
+stuVle <- fread("studentVle.csv")
+vle <- read_csv("vle.csv")
+```
+
+## Biggest Problem Area
+Let's start off by exploring our students.
+
+```{r}
+glimpse(stuInfo)
+colSums(is.na(stuInfo))
+```
+
+As an educator, I would be most concerned about students who fail in the courses or those who withdraw.
+```{r}
+table(stuInfo$final_result)
+```
+
+As we can see `r round(10156/nrow(stuInfo),2)*100`% of the students withdraw from the courses. Further, `r round(7052/nrow(stuInfo),2)*100`% of the students fail in courses. We can now dive a bit deeper into these students who fail or withdraw from courses.
+
+```{r}
+stuInfo$gender <- as.factor(stuInfo$gender)
+stuInfo$final_result <- as.factor(stuInfo$final_result)
+stuWF <- stuInfo %>% filter(final_result=='Withdrawn'|final_result=='Fail')
+
+ggplot(stuWF, aes(x=final_result, fill=gender))+geom_bar()
+```
+
+Are there any particular modules that these students are facing problems in?
+```{r}
+stuInfo$code_module <- as.factor(stuInfo$code_module)
+ggplot(stuWF, aes(x=code_module, fill=final_result))+geom_bar()
+```
+
+What about the level of education?
+
+```{r}
+stuInfo$highest_education <- as.factor(stuInfo$highest_education)
+ggplot(stuWF, aes(x=highest_education, fill=final_result))+geom_bar()
+```
+
