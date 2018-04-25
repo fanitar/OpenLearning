@@ -7,6 +7,7 @@ Open University Learning Analytics Dataset (OULAD) contains data about courses, 
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(plotly)
 ```
 
 Exploratory Data Analysis
@@ -24,8 +25,8 @@ stuVle <- fread("studentVle.csv")
 ```
 
     ## 
-    Read 22.9% of 10655280 rows
-    Read 72.2% of 10655280 rows
+    Read 26.6% of 10655280 rows
+    Read 74.5% of 10655280 rows
     Read 10655280 rows and 6 (of 6) columns from 0.423 GB file in 00:00:04
 
 ``` r
@@ -108,3 +109,42 @@ ggplot(stuWF, aes(x=highest_education, fill=final_result))+geom_bar()
 ```
 
 ![](OULAD_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
+After how many days are students withdrawing? In order to answer this, let's combine the dates of registration and unregistration from the `stuReg` table using the `left_join()` function from `dplyr`.
+
+``` r
+stuWF <- stuWF %>% left_join(stuReg) %>% dplyr::select(names(stuWF), date_registration, date_unregistration)
+```
+
+    ## Joining, by = c("code_module", "code_presentation", "id_student")
+
+``` r
+stuWF$date_unregistration[stuWF$date_unregistration=="?"] <- NA
+stuWF$date_unregistration <- as.numeric(stuWF$date_unregistration)
+p <- ggplot(stuWF, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+geom_histogram(show.legend = FALSE,binwidth = 20)
+p
+```
+
+![](OULAD_files/figure-markdown_github/unnamed-chunk-8-1.png)
+
+How many students leave even before the course starts?
+
+``` r
+stuWF %>% filter(date_unregistration<0) %>% count()
+```
+
+    ## # A tibble: 1 x 1
+    ##       n
+    ##   <int>
+    ## 1  2678
+
+Let's see the students who leave the course after it commences.
+
+``` r
+stuW <- stuWF %>% filter(date_unregistration>0)
+ggplot(stuW, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+geom_histogram(show.legend = FALSE,binwidth = 20)
+```
+
+![](OULAD_files/figure-markdown_github/unnamed-chunk-10-1.png)
+
+A lot of students appear to be leaving within the first 2 months. The number of students leaving during this duration are 3135.

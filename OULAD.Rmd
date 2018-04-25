@@ -23,6 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(plotly)
 ```
 
 ## Exploratory Data Analysis
@@ -75,3 +76,27 @@ stuInfo$highest_education <- as.factor(stuInfo$highest_education)
 ggplot(stuWF, aes(x=highest_education, fill=final_result))+geom_bar()
 ```
 
+After how many days are students withdrawing? In order to answer this, let's combine the dates of registration and unregistration from the `stuReg` table using the `left_join()` function from `dplyr`.
+
+```{r,warning=FALSE,error=FALSE}
+stuWF <- stuWF %>% left_join(stuReg) %>% dplyr::select(names(stuWF), date_registration, date_unregistration)
+
+stuWF$date_unregistration[stuWF$date_unregistration=="?"] <- NA
+stuWF$date_unregistration <- as.numeric(stuWF$date_unregistration)
+p <- ggplot(stuWF, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+geom_histogram(show.legend = FALSE,binwidth = 20)
+p
+```
+ 
+How many students leave even before the course starts?
+```{r}
+stuWF %>% filter(date_unregistration<0) %>% count()
+```
+
+Let's see the students who leave the course after it commences.
+
+```{r}
+stuW <- stuWF %>% filter(date_unregistration>0)
+ggplot(stuW, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+geom_histogram(show.legend = FALSE,binwidth = 20)
+```
+
+A lot of students appear to be leaving within the first 2 months. The number of students leaving during this duration are `r stuW %>% filter(date_unregistration<=60) %>% count()`.
