@@ -25,8 +25,8 @@ stuVle <- fread("studentVle.csv")
 ```
 
     ## 
-    Read 26.6% of 10655280 rows
-    Read 74.5% of 10655280 rows
+    Read 26.4% of 10655280 rows
+    Read 75.1% of 10655280 rows
     Read 10655280 rows and 6 (of 6) columns from 0.423 GB file in 00:00:04
 
 ``` r
@@ -147,4 +147,30 @@ ggplot(stuW, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+g
 
 ![](OULAD_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
+``` r
+stuInfo$final_result <- ifelse(stuInfo$final_result=="Withdrawn","W","S")
+```
+
 A lot of students appear to be leaving within the first 2 months. The number of students leaving during this duration are 3135.
+
+Let's find out how many clicks each student makes.
+
+``` r
+stuVle$sum_click <- as.numeric(stuVle$sum_click)
+stuClks <- stuVle %>% group_by(id_student) %>% summarise(ClkTotal=sum(sum_click))
+```
+
+Combine this with student info table.
+
+``` r
+stuClks$id_student <- as.integer(stuClks$id_student)
+stuInfo <- stuInfo %>% left_join(stuClks, by="id_student") %>% 
+  left_join(stuReg) %>% select(names(stuInfo), date_registration, date_unregistration)
+```
+
+    ## Joining, by = c("code_module", "code_presentation", "id_student")
+
+    ## Warning: Column `code_module` joining factor and character vector, coercing
+    ## into character vector
+
+Now we have reduced this to a binary classification problem...Random Forest, gbm, xgboost.

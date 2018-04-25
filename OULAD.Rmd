@@ -97,6 +97,25 @@ Let's see the students who leave the course after it commences.
 ```{r}
 stuW <- stuWF %>% filter(date_unregistration>0)
 ggplot(stuW, aes(x=date_unregistration, fill = cut(date_unregistration, 100)))+geom_histogram(show.legend = FALSE,binwidth = 20)
+
+stuInfo$final_result <- ifelse(stuInfo$final_result=="Withdrawn","W","S")
 ```
 
 A lot of students appear to be leaving within the first 2 months. The number of students leaving during this duration are `r stuW %>% filter(date_unregistration<=60) %>% count()`.
+
+Let's find out how many clicks each student makes.
+
+```{r}
+stuVle$sum_click <- as.numeric(stuVle$sum_click)
+stuClks <- stuVle %>% group_by(id_student) %>% summarise(ClkTotal=sum(sum_click))
+```
+
+Combine this with student info table.
+```{r}
+stuClks$id_student <- as.integer(stuClks$id_student)
+stuInfo <- stuInfo %>% left_join(stuClks, by="id_student") %>% 
+  left_join(stuReg) %>% select(names(stuInfo), date_registration, date_unregistration)
+
+```
+
+Now we have reduced this to a binary classification problem...Random Forest, gbm, xgboost.
